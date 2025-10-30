@@ -18,3 +18,7 @@ export const getAllUsers = async (): Promise<User[]> => {
   const response = await axios.get(API_URL);
   return response.data;
 };
+// ⬅️ AJOUTE CETTE NOUVELLE FONCTION
+export const deleteUser = async (id: string): Promise<void> => {
+  await axios.delete(`${API_URL}/${id}`);
+};

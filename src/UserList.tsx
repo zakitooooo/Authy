@@ -1,14 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { getAllUsers, User } from "./service/userService";
-function UserList() {
+import {
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Box,
+  IconButton,
+  Chip,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { Delete, Refresh, Inbox } from "@mui/icons-material";
+import { getAllUsers, deleteUser, User } from "./service/userService";
+
+interface UserListProps {
+  refreshTrigger: number;
+}
+
+function UserList({ refreshTrigger }: UserListProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // useEffect s'exécute au chargement du composant
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadUsers = async () => {
     try {
@@ -24,92 +46,153 @@ function UserList() {
     }
   };
 
+  const handleDelete = async (id: string, email: string) => {
+    if (!window.confirm(`Voulez-vous vraiment supprimer ${email} ?`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      await deleteUser(id);
+      await loadUsers();
+    } catch (err) {
+      setError("Erreur lors de la suppression");
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (isLoading) {
-    return <div>Chargement des utilisateurs...</div>;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" py={8}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ ml: 2 }}>
+          Chargement des utilisateurs...
+        </Typography>
+      </Box>
+    );
   }
 
   if (error) {
-    return <div style={{ color: "red" }}>{error}</div>;
+    return (
+      <Box>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={loadUsers} startIcon={<Refresh />}>
+          Réessayer
+        </Button>
+      </Box>
+    );
   }
 
   return (
-    <div style={{ marginTop: "40px" }}>
-      <h2>Liste des utilisateurs</h2>
-
-      <button
-        onClick={loadUsers}
-        style={{
-          padding: "8px 16px",
-          marginBottom: "20px",
-          backgroundColor: "#2196F3",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
+    <Box>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
       >
-        Rafraîchir
-      </button>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h5" component="h2">
+            👥 Liste des utilisateurs
+          </Typography>
+          <Chip
+            label={users.length}
+            color="primary"
+            sx={{
+              fontWeight: "bold",
+              background: "linear-gradient(45deg, #667eea 30%, #764ba2 90%)",
+            }}
+          />
+        </Box>
+
+        <Button variant="outlined" startIcon={<Refresh />} onClick={loadUsers}>
+          Rafraîchir
+        </Button>
+      </Box>
 
       {users.length === 0 ? (
-        <p>Aucun utilisateur enregistré</p>
+        <Box textAlign="center" py={8}>
+          <Inbox
+            sx={{ fontSize: 100, color: "text.secondary", opacity: 0.3 }}
+          />
+          <Typography variant="h6" color="text.secondary" sx={{ mt: 2 }}>
+            Aucun utilisateur enregistré
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Commencez par créer votre premier utilisateur ci-dessus !
+          </Typography>
+        </Box>
       ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "10px",
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#f5f5f5" }}>
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "left",
-                  borderBottom: "2px solid #ddd",
+        <TableContainer component={Paper} elevation={3}>
+          <Table>
+            <TableHead>
+              <TableRow
+                sx={{
+                  background:
+                    "linear-gradient(45deg, #667eea 30%, #764ba2 90%)",
                 }}
               >
-                Email
-              </th>
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "left",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Nom
-              </th>
-              <th
-                style={{
-                  padding: "12px",
-                  textAlign: "left",
-                  borderBottom: "2px solid #ddd",
-                }}
-              >
-                Prénom
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td style={{ padding: "12px", borderBottom: "1px solid #ddd" }}>
-                  {user.email}
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #ddd" }}>
-                  {user.nom}
-                </td>
-                <td style={{ padding: "12px", borderBottom: "1px solid #ddd" }}>
-                  {user.prenom}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <TableCell sx={{ color: "white", fontWeight: "bold" }}>
+                  📧 Email
+                </TableCell>
+                <TableCell sx={{ color: "white", fontWeight: "bold" }}>
+                  👤 Nom
+                </TableCell>
+                <TableCell sx={{ color: "white", fontWeight: "bold" }}>
+                  👤 Prénom
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{ color: "white", fontWeight: "bold" }}
+                >
+                  ⚙️ Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow
+                  key={user.id}
+                  hover
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: "action.hover",
+                    },
+                    opacity: deletingId === user.id ? 0.5 : 1,
+                  }}
+                >
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.nom}</TableCell>
+                  <TableCell>{user.prenom}</TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDelete(user.id!, user.email)}
+                      disabled={deletingId === user.id}
+                      sx={{
+                        "&:hover": {
+                          transform: "scale(1.1)",
+                        },
+                      }}
+                    >
+                      {deletingId === user.id ? (
+                        <CircularProgress size={24} />
+                      ) : (
+                        <Delete />
+                      )}
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 }
 

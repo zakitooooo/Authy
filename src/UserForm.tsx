@@ -1,13 +1,26 @@
 import React, { useState } from "react";
+import {
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Alert,
+  CircularProgress,
+  Stack,
+} from "@mui/material";
+import { Email, Lock, Person, PersonAdd } from "@mui/icons-material";
 import { createUser, User } from "./service/userService";
 
-function UserForm() {
+interface UserFormProps {
+  onUserCreated: () => void;
+}
+
+function UserForm({ onUserCreated }: UserFormProps) {
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
 
-  // Nouveaux états pour les messages
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +30,6 @@ function UserForm() {
     setIsLoading(true);
     setMessage("");
 
-    // Créer l'objet utilisateur
     const newUser: User = {
       email,
       motDePasse,
@@ -26,20 +38,18 @@ function UserForm() {
     };
 
     try {
-      // Envoyer à l'API
-      const createdUser = await createUser(newUser);
+      await createUser(newUser);
 
-      // Succès !
-      setMessage(`Utilisateur créé avec succès ! ID: ${createdUser.id}`);
+      setMessage("Utilisateur créé avec succès !");
       setIsError(false);
 
-      // Réinitialiser le formulaire
       setEmail("");
       setMotDePasse("");
       setNom("");
       setPrenom("");
+
+      onUserCreated();
     } catch (error: any) {
-      // Erreur !
       if (error.response?.status === 400) {
         setMessage("Cet email est déjà utilisé !");
       } else {
@@ -52,75 +62,101 @@ function UserForm() {
   };
 
   return (
-    <div>
-      <h2>Inscription</h2>
+    <Box>
+      <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
+        📝 Inscription
+      </Typography>
 
-      {/* Afficher les messages */}
       {message && (
-        <div
-          style={{
-            padding: "10px",
-            marginBottom: "15px",
-            borderRadius: "4px",
-            backgroundColor: isError ? "#ffebee" : "#e8f5e9",
-            color: isError ? "#c62828" : "#2e7d32",
-            border: `1px solid ${isError ? "#ef5350" : "#66bb6a"}`,
-          }}
+        <Alert
+          severity={isError ? "error" : "success"}
+          sx={{ mb: 3 }}
+          onClose={() => setMessage("")}
         >
           {message}
-        </div>
+        </Alert>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email :</label>
-          <input
+        <Stack spacing={3}>
+          <TextField
+            fullWidth
             type="email"
+            label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="exemple@email.com"
             required
             disabled={isLoading}
+            InputProps={{
+              startAdornment: <Email sx={{ mr: 1, color: "action.active" }} />,
+            }}
           />
-        </div>
 
-        <div>
-          <label>Mot de passe :</label>
-          <input
+          <TextField
+            fullWidth
             type="password"
+            label="Mot de passe"
             value={motDePasse}
             onChange={(e) => setMotDePasse(e.target.value)}
+            placeholder="Minimum 6 caractères"
+            inputProps={{ minLength: 6 }}
             required
             disabled={isLoading}
+            InputProps={{
+              startAdornment: <Lock sx={{ mr: 1, color: "action.active" }} />,
+            }}
           />
-        </div>
 
-        <div>
-          <label>Nom :</label>
-          <input
+          <TextField
+            fullWidth
             type="text"
+            label="Nom"
             value={nom}
             onChange={(e) => setNom(e.target.value)}
+            placeholder="Votre nom"
             required
             disabled={isLoading}
+            InputProps={{
+              startAdornment: <Person sx={{ mr: 1, color: "action.active" }} />,
+            }}
           />
-        </div>
 
-        <div>
-          <label>Prénom :</label>
-          <input
+          <TextField
+            fullWidth
             type="text"
+            label="Prénom"
             value={prenom}
             onChange={(e) => setPrenom(e.target.value)}
+            placeholder="Votre prénom"
             required
             disabled={isLoading}
+            InputProps={{
+              startAdornment: <Person sx={{ mr: 1, color: "action.active" }} />,
+            }}
           />
-        </div>
 
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? "Création en cours..." : "S'inscrire"}
-        </button>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={isLoading}
+            startIcon={
+              isLoading ? <CircularProgress size={20} /> : <PersonAdd />
+            }
+            sx={{
+              background: "linear-gradient(45deg, #667eea 30%, #764ba2 90%)",
+              boxShadow: "0 3px 5px 2px rgba(102, 126, 234, .3)",
+              "&:hover": {
+                background: "linear-gradient(45deg, #5568d3 30%, #66408a 90%)",
+              },
+            }}
+          >
+            {isLoading ? "Création en cours..." : "S'inscrire"}
+          </Button>
+        </Stack>
       </form>
-    </div>
+    </Box>
   );
 }
 
